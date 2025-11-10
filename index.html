@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>FlapyLe ❤️</title>
+<style>
+    * { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+    body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #ffe4ec;
+        font-family: 'Poppins', sans-serif;
+        touch-action: none;
+    }
+
+    #game-area {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        background: linear-gradient(to bottom, #ffe4ec, #ffd6e8);
+    }
+
+    #character {
+        position: absolute;
+        left: 100px;
+        width: 50px;
+        height: 50px;
+        background-color: #FFC0CB;
+        border: 3px solid #FF69B4;
+        border-radius: 50%;
+        background-size: cover;
+        background-position: center;
+        will-change: transform, top;
+        transition: transform 0.08s linear;
+    }
+
+    .pipe {
+        position: absolute;
+        width: 60px;
+        right: -60px;
+        background-color: #ff8acb;
+        border: 3px solid #ff69b4;
+        animation: movePipe 3.5s linear forwards;
+        will-change: transform, right;
+    }
+
+    @keyframes movePipe {
+        from { right: -60px; }
+        to { right: 100vw; }
+    }
+
+    .heart {
+        position: absolute;
+        bottom: 0;
+        font-size: 20px;
+        opacity: 0.6;
+        animation: floatUp 15s linear infinite;
+        user-select: none;
+        pointer-events: none;
+    }
+
+    @keyframes floatUp {
+        from { transform: translateY(0); opacity: 0.6; }
+        to { transform: translateY(-100vh); opacity: 0; }
+    }
+
+    #overlay {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        transition: opacity 0.5s;
+    }
+
+    #main-title {
+        font-size: 2.6em;
+        color: #ff69b4;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    #score-text, #high-score-text, #message-text {
+        font-size: 1.2em;
+        color: #ff69b4;
+        margin: 5px 0;
+        text-align: center;
+    }
+
+    #start-button {
+        background-color: #ff69b4;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 15px;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+        margin-top: 20px;
+        transition: transform 0.2s;
+    }
+
+    #start-button:active {
+        transform: scale(0.97);
+    }
+
+    #score-display {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        font-size: 2em;
+        font-weight: bold;
+        color: #ff69b4;
+        z-index: 2;
+        user-select: none;
+    }
+
+    #photo-picker {
+        text-align: center;
+        margin-top: 20px;
+        z-index: 10;
+    }
+
+    #upload-button {
+        background-color: #ff69b4;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 10px;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    #upload-button:active {
+        transform: scale(0.97);
+    }
+
+    #image-status {
+        font-size: 14px;
+        color: #ff69b4;
+        margin-top: 10px;
+    }
+</style>
+</head>
+<body>
+    <div id="game-area">
+        <div id="character"></div>
+        <div id="score-display">0</div>
+        <div id="overlay">
+            <h1 id="main-title">FlapyLe 💖</h1>
+            <p id="score-text"></p>
+            <p id="high-score-text"></p>
+            <p id="message-text">Toque ou aperte espaço para jogar!</p>
+            <button id="start-button">Começar</button>
+
+            <div id="photo-picker">
+                <button id="upload-button">📸 Adicionar Foto</button>
+                <input type="file" id="image-upload" accept="image/*" capture="environment" style="display:none">
+                <p id="image-status">Usando personagem padrão.</p>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const gameArea = document.getElementById('game-area');
+    const character = document.getElementById('character');
+    const overlay = document.getElementById('overlay');
+    const startButton = document.getElementById('start-button');
+    const mainTitle = document.getElementById('main-title');
+    const messageText = document.getElementById('message-text');
+    const scoreText = document.getElementById('score-text');
+    const highScoreText = document.getElementById('high-score-text');
+    const scoreDisplay = document.getElementById('score-display');
+    const uploadButton = document.getElementById('upload-button');
+    const imageUpload = document.getElementById('image-upload');
+    const imageStatus = document.getElementById('image-status');
+
+    let isGameOver = true;
+    let velocity = 0;
+    let gravity = 0.5;
+    let jump = -10;
+    let score = 0;
+    let highScore = localStorage.getItem('flapyLeHighScore') || 0;
+    const characterSize = 50;
+    let characterTop = gameArea.clientHeight / 2 - characterSize / 2;
+    let gameLoop, pipeGenerator;
+
+    highScoreText.textContent = `Recorde: ${highScore}`;
+
+    // ❤️ Corações flutuantes
+    function createHeart() {
+        const heart = document.createElement('div');
+        heart.classList.add('heart');
+        heart.textContent = '❤️';
+        heart.style.left = `${Math.random() * 100}vw`;
+        heart.style.animationDelay = `-${Math.random() * 15}s`;
+        gameArea.appendChild(heart);
+        setTimeout(() => heart.remove(), 15000);
+    }
+    for (let i = 0; i < 15; i++) createHeart();
+    setInterval(createHeart, 1200);
+
+    // 📸 Upload otimizado
+    uploadButton.addEventListener('click', () => {
+        imageUpload.value = "";
+        imageUpload.click();
+    });
+
+    imageUpload.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const imageData = e.target.result;
+            requestAnimationFrame(() => {
+                character.style.backgroundImage = `url(${imageData})`;
+                character.style.border = 'none';
+                character.style.backgroundColor = 'transparent';
+                imageStatus.textContent = 'Usando sua foto! 💖';
+                localStorage.setItem('flapyLeImage', imageData);
+            });
+        };
+        reader.readAsDataURL(file);
+    });
+
+    function setCharacterToDefault() {
+        character.style.backgroundImage = 'none';
+        character.style.backgroundColor = '#FFC0CB';
+        character.style.border = '3px solid #FF69B4';
+        imageStatus.textContent = 'Usando personagem padrão.';
+        localStorage.removeItem('flapyLeImage');
+    }
+
+    const savedImage = localStorage.getItem('flapyLeImage');
+    if (savedImage) {
+        character.style.backgroundImage = `url(${savedImage})`;
+        character.style.border = 'none';
+        character.style.backgroundColor = 'transparent';
+        imageStatus.textContent = 'Usando sua foto! 💖';
+    } else setCharacterToDefault();
+
+    // 🔄 Lógica principal
+    function resetGame() {
+        document.querySelectorAll('.pipe').forEach(pipe => pipe.remove());
+        characterTop = gameArea.clientHeight / 2 - characterSize / 2;
+        velocity = 0;
+        score = 0;
+        scoreDisplay.textContent = '0';
+        isGameOver = false;
+        overlay.style.opacity = '0';
+        overlay.style.pointerEvents = 'none';
+        startButton.style.display = 'none';
+        document.getElementById('photo-picker').style.display = 'none';
+        startGameLoop();
+    }
+
+    function endGame() {
+        isGameOver = true;
+        cancelAnimationFrame(gameLoop);
+        clearInterval(pipeGenerator);
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('flapyLeHighScore', highScore);
+        }
+        overlay.style.opacity = '1';
+        overlay.style.pointerEvents = 'all';
+        mainTitle.textContent = 'Te amo amor ❤️';
+        scoreText.textContent = `Sua Pontuação: ${score}`;
+        highScoreText.textContent = `Recorde: ${highScore}`;
+        startButton.style.display = 'block';
+        document.getElementById('photo-picker').style.display = 'block';
+    }
+
+    function jumpAction() {
+        if (!isGameOver) velocity = jump;
+        else resetGame();
+    }
+
+    document.addEventListener('touchstart', e => { e.preventDefault(); jumpAction(); }, { passive: false });
+    document.addEventListener('click', jumpAction);
+    document.addEventListener('keydown', e => { if (e.code === 'Space') jumpAction(); });
+    startButton.addEventListener('click', resetGame);
+
+    function startGameLoop() {
+        const update = () => {
+            if (isGameOver) return;
+            velocity += gravity;
+            characterTop += velocity;
+            character.style.top = `${characterTop}px`;
+            character.style.transform = velocity < 0 ? 'rotate(-15deg)' : `rotate(${Math.min(60, velocity * 3)}deg)`;
+
+            if (characterTop > gameArea.clientHeight - characterSize || characterTop < 0) return endGame();
+
+            const charRect = character.getBoundingClientRect();
+            document.querySelectorAll('.pipe').forEach(pipe => {
+                const rect = pipe.getBoundingClientRect();
+                if (
+                    charRect.left < rect.right &&
+                    charRect.right > rect.left &&
+                    charRect.top < rect.bottom &&
+                    charRect.bottom > rect.top
+                ) endGame();
+                if (!pipe.classList.contains('passed') && rect.right < charRect.left) {
+                    score++;
+                    scoreDisplay.textContent = score;
+                    pipe.classList.add('passed');
+                }
+                if (rect.right < 0) pipe.remove();
+            });
+
+            gameLoop = requestAnimationFrame(update);
+        };
+        gameLoop = requestAnimationFrame(update);
+        pipeGenerator = setInterval(createPipes, 1800);
+    }
+
+    function createPipes() {
+        const gap = 180;
+        const minHeight = 50;
+        const maxHeight = gameArea.clientHeight - minHeight - gap;
+        const topH = Math.floor(Math.random() * (maxHeight - minHeight)) + minHeight;
+        const bottomH = gameArea.clientHeight - topH - gap;
+
+        const topPipe = document.createElement('div');
+        topPipe.className = 'pipe';
+        topPipe.style.top = '0';
+        topPipe.style.height = `${topH}px`;
+
+        const bottomPipe = document.createElement('div');
+        bottomPipe.className = 'pipe';
+        bottomPipe.style.bottom = '0';
+        bottomPipe.style.height = `${bottomH}px`;
+
+        gameArea.appendChild(topPipe);
+        gameArea.appendChild(bottomPipe);
+
+        setTimeout(() => {
+            topPipe.remove();
+            bottomPipe.remove();
+        }, 4000);
+    }
+
+    overlay.style.opacity = '1';
+    overlay.style.pointerEvents = 'all';
+});
+</script>
+</body>
+</html>
