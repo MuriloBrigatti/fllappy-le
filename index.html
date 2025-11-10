@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>FlapyLe ❤️</title>
 <style>
     * { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
@@ -11,9 +11,7 @@
         overflow: hidden;
         background-color: #ffe4ec;
         font-family: 'Poppins', sans-serif;
-        touch-action: none;
     }
-
     #game-area {
         position: relative;
         width: 100vw;
@@ -21,7 +19,6 @@
         overflow: hidden;
         background: linear-gradient(to bottom, #ffe4ec, #ffd6e8);
     }
-
     #character {
         position: absolute;
         left: 100px;
@@ -32,25 +29,20 @@
         border-radius: 50%;
         background-size: cover;
         background-position: center;
-        will-change: transform, top;
-        transition: transform 0.08s linear;
     }
-
     .pipe {
         position: absolute;
         width: 60px;
         right: -60px;
         background-color: #ff8acb;
         border: 3px solid #ff69b4;
-        animation: movePipe 3.5s linear forwards;
-        will-change: transform, right;
+        will-change: transform;
+        animation: movePipe 3.2s linear forwards;
     }
-
     @keyframes movePipe {
         from { right: -60px; }
         to { right: 100vw; }
     }
-
     .heart {
         position: absolute;
         bottom: 0;
@@ -60,12 +52,10 @@
         user-select: none;
         pointer-events: none;
     }
-
     @keyframes floatUp {
         from { transform: translateY(0); opacity: 0.6; }
         to { transform: translateY(-100vh); opacity: 0; }
     }
-
     #overlay {
         position: absolute;
         width: 100%;
@@ -75,23 +65,20 @@
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        transition: opacity 0.5s;
+        transition: opacity 0.4s;
     }
-
     #main-title {
-        font-size: 2.6em;
+        font-size: 2.8em;
         color: #ff69b4;
         margin-bottom: 20px;
         text-align: center;
     }
-
     #score-text, #high-score-text, #message-text {
         font-size: 1.2em;
         color: #ff69b4;
         margin: 5px 0;
         text-align: center;
     }
-
     #start-button {
         background-color: #ff69b4;
         border: none;
@@ -101,13 +88,10 @@
         font-weight: bold;
         cursor: pointer;
         margin-top: 20px;
-        transition: transform 0.2s;
     }
-
     #start-button:active {
-        transform: scale(0.97);
+        transform: scale(0.95);
     }
-
     #score-display {
         position: absolute;
         top: 15px;
@@ -116,15 +100,12 @@
         font-weight: bold;
         color: #ff69b4;
         z-index: 2;
-        user-select: none;
     }
-
     #photo-picker {
         text-align: center;
         margin-top: 20px;
         z-index: 10;
     }
-
     #upload-button {
         background-color: #ff69b4;
         border: none;
@@ -133,13 +114,10 @@
         color: white;
         font-weight: bold;
         cursor: pointer;
-        transition: transform 0.2s;
     }
-
     #upload-button:active {
-        transform: scale(0.97);
+        transform: scale(0.95);
     }
-
     #image-status {
         font-size: 14px;
         color: #ff69b4;
@@ -155,9 +133,8 @@
             <h1 id="main-title">FlapyLe 💖</h1>
             <p id="score-text"></p>
             <p id="high-score-text"></p>
-            <p id="message-text">Toque ou aperte espaço para jogar!</p>
+            <p id="message-text">Toque na tela ou aperte espaço para jogar!</p>
             <button id="start-button">Começar</button>
-
             <div id="photo-picker">
                 <button id="upload-button">📸 Adicionar Foto</button>
                 <input type="file" id="image-upload" accept="image/*" capture="environment" style="display:none">
@@ -172,33 +149,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const character = document.getElementById('character');
     const overlay = document.getElementById('overlay');
     const startButton = document.getElementById('start-button');
-    const mainTitle = document.getElementById('main-title');
-    const messageText = document.getElementById('message-text');
+    const scoreDisplay = document.getElementById('score-display');
+    const imageUpload = document.getElementById('image-upload');
+    const uploadButton = document.getElementById('upload-button');
+    const imageStatus = document.getElementById('image-status');
     const scoreText = document.getElementById('score-text');
     const highScoreText = document.getElementById('high-score-text');
-    const scoreDisplay = document.getElementById('score-display');
-    const uploadButton = document.getElementById('upload-button');
-    const imageUpload = document.getElementById('image-upload');
-    const imageStatus = document.getElementById('image-status');
+    const mainTitle = document.getElementById('main-title');
+    const messageText = document.getElementById('message-text');
 
     let isGameOver = true;
-    let velocity = 0;
-    let gravity = 0.5;
-    let jump = -10;
+    let velocity = 0, gravity = 0.45, jump = -9;
     let score = 0;
+    const size = 50;
+    let charY = gameArea.clientHeight / 2 - size / 2;
+    let lastPipe = 0;
+    let pipes = [];
     let highScore = localStorage.getItem('flapyLeHighScore') || 0;
-    const characterSize = 50;
-    let characterTop = gameArea.clientHeight / 2 - characterSize / 2;
-    let gameLoop, pipeGenerator;
-
     highScoreText.textContent = `Recorde: ${highScore}`;
 
-    // ❤️ Corações flutuantes
+    // Corações de fundo
     function createHeart() {
         const heart = document.createElement('div');
         heart.classList.add('heart');
         heart.textContent = '❤️';
-        heart.style.left = `${Math.random() * 100}vw`;
+        heart.style.left = Math.random() * 100 + 'vw';
         heart.style.animationDelay = `-${Math.random() * 15}s`;
         gameArea.appendChild(heart);
         setTimeout(() => heart.remove(), 15000);
@@ -206,30 +181,24 @@ document.addEventListener('DOMContentLoaded', () => {
     for (let i = 0; i < 15; i++) createHeart();
     setInterval(createHeart, 1200);
 
-    // 📸 Upload otimizado
-    uploadButton.addEventListener('click', () => {
-        imageUpload.value = "";
-        imageUpload.click();
-    });
-
-    imageUpload.addEventListener('change', (event) => {
-        const file = event.target.files[0];
+    // Upload de imagem funcional mobile
+    uploadButton.addEventListener('click', () => imageUpload.click());
+    imageUpload.addEventListener('change', e => {
+        const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = (e) => {
-            const imageData = e.target.result;
-            requestAnimationFrame(() => {
-                character.style.backgroundImage = `url(${imageData})`;
-                character.style.border = 'none';
-                character.style.backgroundColor = 'transparent';
-                imageStatus.textContent = 'Usando sua foto! 💖';
-                localStorage.setItem('flapyLeImage', imageData);
-            });
+        reader.onload = ev => {
+            const data = ev.target.result;
+            character.style.backgroundImage = `url(${data})`;
+            character.style.border = 'none';
+            character.style.backgroundColor = 'transparent';
+            imageStatus.textContent = 'Usando sua foto! 💖';
+            localStorage.setItem('flapyLeImage', data);
         };
         reader.readAsDataURL(file);
     });
 
-    function setCharacterToDefault() {
+    function resetCharacterImage() {
         character.style.backgroundImage = 'none';
         character.style.backgroundColor = '#FFC0CB';
         character.style.border = '3px solid #FF69B4';
@@ -243,27 +212,24 @@ document.addEventListener('DOMContentLoaded', () => {
         character.style.border = 'none';
         character.style.backgroundColor = 'transparent';
         imageStatus.textContent = 'Usando sua foto! 💖';
-    } else setCharacterToDefault();
+    } else resetCharacterImage();
 
-    // 🔄 Lógica principal
-    function resetGame() {
-        document.querySelectorAll('.pipe').forEach(pipe => pipe.remove());
-        characterTop = gameArea.clientHeight / 2 - characterSize / 2;
+    // Jogo
+    function startGame() {
+        isGameOver = false;
         velocity = 0;
         score = 0;
         scoreDisplay.textContent = '0';
-        isGameOver = false;
+        charY = gameArea.clientHeight / 2 - size / 2;
+        pipes.forEach(p => p.remove());
+        pipes = [];
         overlay.style.opacity = '0';
         overlay.style.pointerEvents = 'none';
-        startButton.style.display = 'none';
-        document.getElementById('photo-picker').style.display = 'none';
-        startGameLoop();
+        loop();
     }
 
     function endGame() {
         isGameOver = true;
-        cancelAnimationFrame(gameLoop);
-        clearInterval(pipeGenerator);
         if (score > highScore) {
             highScore = score;
             localStorage.setItem('flapyLeHighScore', highScore);
@@ -277,54 +243,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('photo-picker').style.display = 'block';
     }
 
-    function jumpAction() {
-        if (!isGameOver) velocity = jump;
-        else resetGame();
-    }
-
-    document.addEventListener('touchstart', e => { e.preventDefault(); jumpAction(); }, { passive: false });
-    document.addEventListener('click', jumpAction);
-    document.addEventListener('keydown', e => { if (e.code === 'Space') jumpAction(); });
-    startButton.addEventListener('click', resetGame);
-
-    function startGameLoop() {
-        const update = () => {
-            if (isGameOver) return;
-            velocity += gravity;
-            characterTop += velocity;
-            character.style.top = `${characterTop}px`;
-            character.style.transform = velocity < 0 ? 'rotate(-15deg)' : `rotate(${Math.min(60, velocity * 3)}deg)`;
-
-            if (characterTop > gameArea.clientHeight - characterSize || characterTop < 0) return endGame();
-
-            const charRect = character.getBoundingClientRect();
-            document.querySelectorAll('.pipe').forEach(pipe => {
-                const rect = pipe.getBoundingClientRect();
-                if (
-                    charRect.left < rect.right &&
-                    charRect.right > rect.left &&
-                    charRect.top < rect.bottom &&
-                    charRect.bottom > rect.top
-                ) endGame();
-                if (!pipe.classList.contains('passed') && rect.right < charRect.left) {
-                    score++;
-                    scoreDisplay.textContent = score;
-                    pipe.classList.add('passed');
-                }
-                if (rect.right < 0) pipe.remove();
-            });
-
-            gameLoop = requestAnimationFrame(update);
-        };
-        gameLoop = requestAnimationFrame(update);
-        pipeGenerator = setInterval(createPipes, 1800);
-    }
-
-    function createPipes() {
-        const gap = 180;
-        const minHeight = 50;
-        const maxHeight = gameArea.clientHeight - minHeight - gap;
-        const topH = Math.floor(Math.random() * (maxHeight - minHeight)) + minHeight;
+    function createPipe() {
+        const gap = 170;
+        const minH = 50;
+        const maxH = gameArea.clientHeight - gap - minH;
+        const topH = Math.floor(Math.random() * (maxH - minH)) + minH;
         const bottomH = gameArea.clientHeight - topH - gap;
 
         const topPipe = document.createElement('div');
@@ -339,15 +262,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
         gameArea.appendChild(topPipe);
         gameArea.appendChild(bottomPipe);
+        pipes.push(topPipe, bottomPipe);
 
         setTimeout(() => {
             topPipe.remove();
             bottomPipe.remove();
+            pipes = pipes.filter(p => p !== topPipe && p !== bottomPipe);
         }, 4000);
     }
 
-    overlay.style.opacity = '1';
-    overlay.style.pointerEvents = 'all';
+    function loop(timestamp) {
+        if (isGameOver) return;
+
+        velocity += gravity;
+        charY += velocity;
+        character.style.top = charY + 'px';
+        character.style.transform = velocity < 0 ? 'rotate(-15deg)' : `rotate(${Math.min(60, velocity * 3)}deg)`;
+
+        if (charY < 0 || charY > gameArea.clientHeight - size) {
+            endGame();
+            return;
+        }
+
+        if (!lastPipe || timestamp - lastPipe > 2000) {
+            createPipe();
+            lastPipe = timestamp;
+        }
+
+        const charRect = character.getBoundingClientRect();
+        pipes.forEach(pipe => {
+            const rect = pipe.getBoundingClientRect();
+            if (
+                charRect.left < rect.right &&
+                charRect.right > rect.left &&
+                charRect.top < rect.bottom &&
+                charRect.bottom > rect.top
+            ) endGame();
+            if (!pipe.passed && rect.right < charRect.left) {
+                pipe.passed = true;
+                score++;
+                scoreDisplay.textContent = score;
+            }
+        });
+
+        requestAnimationFrame(loop);
+    }
+
+    function jumpAction() {
+        if (!isGameOver) velocity = jump;
+        else startGame();
+    }
+
+    document.addEventListener('touchstart', e => { e.preventDefault(); jumpAction(); }, { passive: false });
+    document.addEventListener('click', jumpAction);
+    document.addEventListener('keydown', e => { if (e.code === 'Space') jumpAction(); });
+    startButton.addEventListener('click', startGame);
 });
 </script>
 </body>
